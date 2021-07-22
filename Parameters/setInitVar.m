@@ -1,3 +1,4 @@
+% Author: Nathan Timmers
 %% set initial conditions
 % conditions from Song
 vxInit             = (innerOptSettings.targetVelocity); %[m/s]

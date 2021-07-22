@@ -1,4 +1,5 @@
 % ASSIGNINIT        Script that assigns the initial values from the initial conditions vector 
+% Author: Nathan Timmers
 %%
 setInitVar;
 

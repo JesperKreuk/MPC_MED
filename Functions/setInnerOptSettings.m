@@ -1,3 +1,4 @@
+% Author: Nathan Timmers
 function [innerOptSettings, opts] = setInnerOptSettings(model,varargin)
 % SETINNEROPTSETTINGS               Function that plots the data simulation
 %

@@ -1,3 +1,4 @@
+% Author: Nathan Timmers
 classdef GaitState < Simulink.IntEnumType
   enumeration
     EarlyStance(0)

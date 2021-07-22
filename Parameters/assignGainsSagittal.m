@@ -1,5 +1,5 @@
 % ASSIGNGAINSSAGITTAL        Script that assigns values to the Sagittal neurological controller variables from the Gain vector 
-
+% Author: Nathan Timmers
 %% Left
 %% stance gains
 % M1

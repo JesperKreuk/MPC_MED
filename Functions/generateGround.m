@@ -1,3 +1,4 @@
+% Author: Nathan Timmers
 function [groundX, groundZ, groundTheta] = generateGround(type, param, seed, b_save)
 groundX = zeros(1,200);
 groundX(1:2:end) = 0:99;

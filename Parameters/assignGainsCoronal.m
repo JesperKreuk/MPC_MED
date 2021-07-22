@@ -1,5 +1,5 @@
 % ASSIGNGAINSCORONAL        Script that assigns values to the Coronal neurological controller variables from the Gain vector 
-
+% Author: Nathan Timmers
  
 %% Left
 %% Coronal 
