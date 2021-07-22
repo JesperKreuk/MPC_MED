@@ -18,11 +18,11 @@ mainfolderpath = outputstruct.folder;
 
 % Add path of certain subfolders
 addpath(mainfolderpath);
-addpath(genpath(strcat(mainfolderpath,[filesep 'Functions'])));
-addpath(strcat(mainfolderpath,[filesep 'Results']));
-addpath(strcat(mainfolderpath,[filesep 'CompassGaitBiped']));
-addpath(strcat(mainfolderpath,[filesep 'Parameters']));
-addpath(strcat(mainfolderpath,[filesep 'NMSModelsSimulink']));
+addpath(genpath(strcat(mainfolderpath,[filesep 'CGB'])));
+addpath(strcat(mainfolderpath,[filesep 'Geyer']));
+addpath(strcat(mainfolderpath,[filesep 'NMS']));
+addpath(strcat(mainfolderpath,[filesep 'Song']));
+addpath(strcat(mainfolderpath,[filesep 'Timmers']));
 
 % This is only possible if gurobi is installed! This is the default path of
 % the gurobi installation
