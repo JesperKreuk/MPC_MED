@@ -15,7 +15,7 @@ The code has three main files
 * NMScontrol.m
 
 Files corresponding to the CGB model are in the folder 'CGB'
-Files corresponding to the NMS model are in the folder 'CGB'
+Files corresponding to the NMS model are in the folder 'NMS'
 Files and images are in folder 'Results'
 
 ## Run the code
@@ -31,6 +31,7 @@ The following toolboxes in MATLAB are used:
 For solving the MIQP optimization the following toolbox is used:
 * Gurobi optimizer (911)
  
-Any of the three aforementioned main files can be run after these are installation
+Any of the three aforementioned main files can be run after these are installed
 
+## License
 The code is available for Academic or Non-Profit Organization Noncommercial research use only.
