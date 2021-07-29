@@ -1,18 +1,36 @@
+%{
+This file finds the optimal constant torque of the momentum exchange device
+to reach a given step length. Different step references and disturbances
+are tested to challenge the controller. Additionally, the relation between
+the cost function to optimize and the constant torque is plotted. 
+
+Author: Jesper Kreuk
+
+License: The code is available for Academic or Non-Profit Organization 
+Noncommercial research use only.
+%}
+
+% This is the main file, clear all variables
 clear all
 close all
 clc
 
+% Add all folders to path
 setup_paths
 
 %% Settings
+% Setting the test variables to 1 makes the optimization run, this can take
+% a while.
 disturbanceTest = 0;
 refTest = 0;
 %% Parameters
+% Load parameters
 nms_model_MechInit;
 nms_model_ControlInit;
 initState;
 
-dt_visual = -1;
+% The step time is set to inherent, this way the time is sampled at heel strike
+dt_visual = -1; 
 
 umax = 5; % Assume a maximum torque of 5 Nm
 

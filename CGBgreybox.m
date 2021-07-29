@@ -3,9 +3,13 @@ This file performs a grey-box estimation of the nonlinear compass-gait
 biped (CGB) model. The file uses data simulated by the 3D nms model of Song.
 The parameters of the CGB model are optimized and validated on different
 data sets from the simulation. Additionally, the model is linearized in two
-different linearization points. 
+different linearization points. It is evaluated how well the models fit the
+data of the 3D nms model.
 
 Author: Jesper Kreuk
+
+License: The code is available for Academic or Non-Profit Organization 
+Noncommercial research use only.
 %}
 
 %%
@@ -14,24 +18,36 @@ clear all
 close all
 clc
 
-% Setup paths
+% Add all folders to path
 setup_paths
 
 %% Settings
-% Choose 1 to estimate the system, choose 0 
-estimateSystem = 1; 
-validateSystem = 1;
-linearizeSystem = 1;
+% Choose 1 to estimate the system, choose 0 to load the parameters
+estimateSystem = 0; 
+
+% Choose 1 to validate the system, choose 0 to skip this part
+validateSystem = 0;
+
+% Choose 1 to linearize system, new matlab functions for A, B and Baff will
+% be made. Choose 0 to skip this part
+linearizeSystem = 0;
 
 %% Position tracking
+% Different positions on the foot can be tracked, this section plots the
+% trajectories of three options, the heel, anke and toe.
+
 swingNumberID = 10; % this swing number will be used for grey-box estimation
 dataset = 'greyboxData.mat'; % dataset used for grey-box estimation
 
+% Find the trajectories for the different positions
 [RdataxToe, swingPercentageData] = positionTracking(dataset,swingNumberID, 'toe', 0);
 [RdataxAnkle] = positionTracking(dataset,swingNumberID, 'ankle', 1);
 [RdataxHeel] = positionTracking(dataset,swingNumberID, 'heel', 0);
 
-figure('DefaultAxesFontSize',11); 
+% Plot the trajectories
+figure('DefaultAxesFontSize',11);
+
+% Angle of the stance leg
 subplot(221)
 hold on
 plot(swingPercentageData,RdataxToe(:,1),'k','LineWidth',1.2)
@@ -41,6 +57,7 @@ title('Stance leg')
 ylabel('Angle in rad')
 legend('Toe','Ankle','Heel', 'Location', 'northwest')
 
+% Angle of the swing leg
 subplot(222)
 hold on
 plot(swingPercentageData,RdataxToe(:,2),'k','LineWidth',1.2)
@@ -48,6 +65,7 @@ plot(swingPercentageData,RdataxAnkle(:,2),'b--','LineWidth',1.5)
 plot(swingPercentageData,RdataxHeel(:,2),'r-.','LineWidth',1.5)
 title('Swing leg')
 
+% Angular velocity of the stance leg
 subplot(223)
 hold on
 plot(swingPercentageData,RdataxToe(:,3),'k','LineWidth',1.2)
@@ -56,6 +74,7 @@ plot(swingPercentageData,RdataxHeel(:,3),'r-.','LineWidth',1.5)
 ylabel('Angular velocity in rad/s')
 xlabel('Swing in %')
 
+% Angular velocity of the swing leg
 subplot(224)
 hold on    
 plot(swingPercentageData,RdataxToe(:,4),'k','LineWidth',1.2)
@@ -64,9 +83,8 @@ plot(swingPercentageData,RdataxHeel(:,4),'r-.','LineWidth',1.5)
 ylabel('Angular velocity in rad/s')
 xlabel('Swing in %')
 
-%% Estimate the system
+%% Estimate the parameters of the CGB model
 % Run estimation or load parameters, depending on settings
-
 if estimateSystem
     % Find the optimal model and parameters
     [parametersOpt, modelOpt] = greyboxEstimation(dataset, swingNumberID);
@@ -85,13 +103,15 @@ end
 %% Simulate the nonlinear CGB model 
 horizon = 60; % prediction horizon (dt = 1e-2, so 0.6s)
 
+% Load data from simulation of the 3D model of Song
 load(dataset,'simout');
 loadGreyboxPositions;
 
+% Find indices of swing and the hip correction
 swingIndicesVal = findSwingIndices(dataset,swingNumberVal);
 hipCorrection = calculateHipCorrection(dataset,swingNumberID);
 
-% Calculate state x from swingnumber 
+% Calculate state x for swingnumber 
 [Rdatax, ~, Ndata] = calculateSensorData(LAnklePosxy,...
             RAnklePosxy,LHipPosxy,RHipPosxy,hipCorrection,swingIndicesVal);
 x0 = Rdatax(1,:).';
@@ -105,14 +125,15 @@ phi2 = parametersOpt(5);
 
 dt = 1e-2; % Time step of discrete system
 tspan = 0:dt:0.6;
-% Simulate system
+
+% Simulate nonlinear CGB model
 [~,xnonlin] = ode45(@(t,x)dynamics(t,x,m,a,mH,phi1,phi2), tspan, x0);
 xnonlin = xnonlin.';
 
 %% Linearize nonlinear CGB model (symbolic)
-% Linear system in continuous time
 params = setupParamsStruct(parametersOpt);
 if linearizeSystem
+    % Linear system in continuous time
     [Asym,Bsym,Baffsym] = linearizeCWModel(params);
     
     % Create matlab functions from symbolic expressions
@@ -129,7 +150,7 @@ Ac1 = Asymfun(xeq,0);
 Bc1 = Bsymfun(xeq,0);
 Baffc1 = Baffsymfun(xeq,0);
 
-% Simulate system
+% Simulate linear CGB model with alpha = 0
 xlin = x0;
 for i = 1:horizon
     xdot(:,i) =Ac1*xlin(:,i)+Baffc1;
@@ -137,15 +158,15 @@ for i = 1:horizon
 end
 
 %% Simulate linear system for alpha = 0.5 from the initial position
-% Find the linearization point
+% Find the linearization point and linearize
 alpha = 0.5;
 xeq2 = findLinearizationPoint(xnonlin, x0, alpha);
-% 
+
 Ac2 = Asymfun(xeq2,0);
 Bc2 = Bsymfun(xeq2,0);
 Baffc2 = Baffsymfun(xeq2,0);
 
-% Initial plot
+% Simulate linear CGB model with alpha = 0.5
 xlin2 = x0;
 for i = 1:horizon
     xdot2(:,i) =Ac2*xlin2(:,i)+Baffc2;
@@ -328,7 +349,7 @@ plot(swingPercentageData,Rdatax(:,1:2),'g','LineWidth',1.5)
 nonlinPrediction = plot(swingPercentageModel,xnonlin(1:2,1:Nmodel),'k','LineWidth',1.3);
 linPrediction = plot(swingPercentageModel,xlin(1:2,1:Nmodel).','b--','LineWidth',1.7);
 linPrediction2 = plot(swingPercentageModel,xlin2(1:2,1:Nmodel).','r--','LineWidth',1.7);
-legend('\theta_1','\theta_2','\theta_1 nonlin','\theta_2 nonlin', ...
+legend('\theta_1 data','\theta_2 data','\theta_1 nonlin','\theta_2 nonlin', ...
     '\theta_1 lin \alpha = 0','\theta_2 lin \alpha = 0', ...
     '\theta_1 lin \alpha = 0.5','\theta_2 lin \alpha = 0.5','location','southwest')
 axis([0,100,-0.8,0.5])

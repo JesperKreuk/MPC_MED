@@ -1,6 +1,12 @@
 %{
-This MATLAB file is able to simulate the 3D walking model of Song with
-the MLD controller or the nonlinear control method.
+This file simulates the 3D walking model of Song with
+the MLD controller or the nonlinear control method based on the compass-
+gait biped (CGB) model. The resulting control actions are plotted
+
+Author: Jesper Kreuk
+
+License: The code is available for Academic or Non-Profit Organization 
+Noncommercial research use only.
 %}
 
 %%
@@ -9,7 +15,7 @@ clear all
 close all
 clc
 
-% Setup paths
+% Add all folders to path
 setup_paths
 
 
