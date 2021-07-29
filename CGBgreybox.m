@@ -18,7 +18,8 @@ clc
 setup_paths
 
 %% Settings
-estimateSystem = 1;
+% Choose 1 to estimate the system, choose 0 
+estimateSystem = 1; 
 validateSystem = 1;
 linearizeSystem = 1;
 
