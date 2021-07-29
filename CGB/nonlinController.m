@@ -1,13 +1,12 @@
-function y = nonlinController(x,t,counter)
-%     coder.extrinsic('NMPC_mex'); 
+function y = nonlinController(x,t,counter,Qy,yref)
     if t < 5
         y = [0;0];
     else
         dt = 0.01;
-        Qy = 1e8;
-        yref = 0.7;
-        load('Optimal_params_30percentSong.mat')
-        params = setupParamsStruct(ParametersOpt, Qy, yref, dt);
+        controlParams.Qy = Qy;
+        controlParams.yref = yref;
+        load('CGBoptimalParameters.mat')
+        params = setupParamsStruct(parametersOpt, dt, controlParams);
         if x(5) == 0
             counter = 0;
         elseif x(5) == 1
@@ -15,9 +14,6 @@ function y = nonlinController(x,t,counter)
         end
         kimp = 49-counter;
         if x(5) == 1
-            dt = params.dt;
-    %         timp = heelstrike(x(1:4),params); % Find when heelstrike occurs
-    %         kimp = round(timp/dt);
             if kimp > 0
                 % Prosthetic swing
                 uoptvector = NMPC(x(1:4), kimp+8, params);

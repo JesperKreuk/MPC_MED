@@ -1,6 +1,4 @@
 % this script is called by nms_3Dmodel.mdl
-addpath('.\param');
-
 walkType = 1;
 % 1: normal walk
 % 2: robust walk

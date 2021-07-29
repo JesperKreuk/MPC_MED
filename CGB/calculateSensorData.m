@@ -3,7 +3,7 @@
 function [Rdatax, Rdatau, Ndata] = calculateSensorData(LAnklePosxy,...
                 RAnklePosxy,LHipPosxy,RHipPosxy,hipCorrection,indices)
     L = 1;
-    dt_visual = 1.0000e-03;
+    dt = 1e-3;
             
     RfootPosxy = RAnklePosxy;
     LfootPosxy = LAnklePosxy;
@@ -16,8 +16,8 @@ function [Rdatax, Rdatau, Ndata] = calculateSensorData(LAnklePosxy,...
     th2 = asin((HipPosxy(:,1)-RfootPosxy(:,1))/L);
 
     % Calculate dth1 and dth2
-    dth1 = gradient(th1,dt_visual);
-    dth2 = gradient(th2,dt_visual);
+    dth1 = gradient(th1,dt);
+    dth2 = gradient(th2,dt);
 
     % Define x and u
     x = [th1,th2,dth1,dth2];

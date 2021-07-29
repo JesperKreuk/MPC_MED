@@ -1,61 +1,38 @@
-function [modelOpt, ParametersOpt] = greyboxEstimation(dataset, swingNumber, skipSwingPercentage, virGravityDirs)
-    if nargin < 3
-        skipSwingPercentage = 0;
-        virGravityDirs = 2;
-    elseif nargin < 4
-        virGravityDirs = 2;
-    end
-    
+%{
+This function does a nonlinear greybox estimation of the CGB model. For this
+it uses the data of a certain swing number. This data is from the 3D NMS
+model of song.
+
+Arguments:
+* dataset: the dataset containing the positions required for the greybox
+    estimation
+* swingNumber: which swing of the data is used for greybox estimation
+
+Output: 
+* ParametersOpt: The optimized parameters [m, a, mH, phi1, phi2] of the CGB
+    model
+
+Author: Jesper Kreuk
+%}
+
+function [parametersOpt, modelOpt] = greyboxEstimation(dataset, swingNumber)
     %% Load data and parameters
-    BodyMechParams
-    initialCWParameters
-    
-    load(dataset,'simout')
-    
-    % Time
-    t = simout.greyEstData.time;
-    dt = diff(t(1:2));
-    
-    % Extract relevant locations
-    HATPosxy = simout.greyEstData.signals.values(:,1:2);
-    LToePosxy = simout.greyEstData.signals.values(:,3:4);
-    LAnklePosxy = simout.greyEstData.signals.values(:,5:6);
-    LHeelPosxy = simout.greyEstData.signals.values(:,7:8);
-    LKneePosxy = simout.greyEstData.signals.values(:,9:10);
-    LHipPosxy = simout.greyEstData.signals.values(:,11:12);
-    RToePosxy = simout.greyEstData.signals.values(:,13:14);
-    RAnklePosxy = simout.greyEstData.signals.values(:,15:16);
-    RHeelPosxy = simout.greyEstData.signals.values(:,17:18);
-    RKneePosxy = simout.greyEstData.signals.values(:,19:20);
-    RHipPosxy = simout.greyEstData.signals.values(:,21:22);
+    BodyMechParams % This contains the body masses
+        
+    load(dataset,'simout');
+    loadGreyboxPositions
 
-    % This constant is calculated in calculateSensorData.m
-    hipCorrection = 0.0816;
-    
-    
-    
-    %% Find heelstrike
-    RswingIdx = find(simout.RSwing.signals.values>0);
-    RswingEndIdx = find(diff(RswingIdx)>1);
-
-    RSwingIndices = cell(length(RswingEndIdx),1);
-    RSwingIndices{1} = RswingIdx(1):RswingIdx(RswingEndIdx(1));
-    for i = 1:length(RswingEndIdx)-1
-        RSwingIndices{i+1} = RswingIdx(RswingEndIdx(i)+1):RswingIdx(RswingEndIdx(i+1));
-    end
-
-
-    allIndices = cell2mat(RSwingIndices(swingNumber));
-    Ndata = length(allIndices);
-    skipIndices = round(skipSwingPercentage/100*Ndata);
-    cutIndices =  allIndices(skipIndices+1:end);
+    swingIndices = findSwingIndices(dataset,swingNumber);
+    hipCorrection = calculateHipCorrection(dataset,swingNumber);
     %% Extract data from swingnumber (x,u)
-    [Ldatax, Ldatau, ~] = calculateSensorData(LAnklePosxy,...
-                RAnklePosxy,LHipPosxy,RHipPosxy,hipCorrection,cutIndices);
-    data = iddata(Ldatax(:,1:2), Ldatau, dt');
+    [Rdatax, Rdatau, ~] = calculateSensorData(LAnklePosxy,...
+                RAnklePosxy,LHipPosxy,RHipPosxy,hipCorrection,swingIndices);
+    dt_id = 1e-3; % step time of the identification data
+    data = iddata(Rdatax(:,1:2), Rdatau, dt_id);
 
     %% Initial guess
-    % Parameters
+    % Estimate the masses and distances. The virtual gravity angles are
+    % chosen arbitrary
     mHInit = hatMass;
     mInit = footMass+shankMass+thighMass;
     aInit = (shankMass*shankAnkleToCGDist+thighMass*(shankLength+thighKneeToCG))/mInit;
@@ -65,20 +42,14 @@ function [modelOpt, ParametersOpt] = greyboxEstimation(dataset, swingNumber, ski
     %% Parameter estimation
     Order         = [2 2 4];           % Model orders [ny nu nx]
     
-    InitialStates = [Ldatax(1,1); Ldatax(1,2); Ldatax(1,3);Ldatax(1,4)];            % Initial initial states.
+    InitialStates = [Rdatax(1,1); Rdatax(1,2); Rdatax(1,3);Rdatax(1,4)];            % Initial initial states.
     Ts            = 0;                 % Time-continuous system.
 
-    if virGravityDirs == 1
-        ParametersInit    = [mInit; aInit; mHInit; phi1Init];         % Initial parameters
-        modelInit = idnlgrey('CWdynamics1Dir', Order, ParametersInit, InitialStates, Ts, ...
-                    'Name', 'Compass Walker');
-    elseif virGravityDirs == 2
-        ParametersInit    = [mInit; aInit; mHInit; phi1Init; phi2Init];         % Initial parameters
-        modelInit = idnlgrey('CWdynamics2Dir', Order, ParametersInit, InitialStates, Ts, ...
-                    'Name', 'Compass Walker');
-    else
-        disp('Error: Set virGravityDirs equal to 1 or 2')
-    end
+
+    ParametersInit    = [mInit; aInit; mHInit; phi1Init; phi2Init];         % Initial parameters
+    modelInit = idnlgrey('dynamicsGreybox', Order, ParametersInit, InitialStates, Ts, ...
+                'Name', 'Compass Walker');
+
 
     % Set bounds on the parameters, allow 50% Deviation from the original
     % value
@@ -89,15 +60,10 @@ function [modelOpt, ParametersOpt] = greyboxEstimation(dataset, swingNumber, ski
     modelInit.Parameters(3).Minimum = mHInit*0.7;
     modelInit.Parameters(3).Maximum = mHInit*1.3; 
     modelInit.Parameters(4).Minimum = 3/180*pi;
-    modelInit.Parameters(4).Maximum = 25/180*pi;
-
-%     modelInit.Parameters(1).Fixed = true;
-    % model.Parameters(2).Fixed = true;
-    % model.Parameters(3).Fixed = true;
-    if virGravityDirs == 2
-        modelInit.Parameters(5).Minimum = 3/180*pi;
-        modelInit.Parameters(5).Maximum = 25/180*pi;
-    end
+    modelInit.Parameters(4).Maximum = 25/180*pi;    
+    modelInit.Parameters(5).Minimum = 3/180*pi;
+    modelInit.Parameters(5).Maximum = 25/180*pi;
+    
 
     opt = nlgreyestOptions;
     opt.SearchOptions.MaxIterations = 50;
@@ -106,11 +72,8 @@ function [modelOpt, ParametersOpt] = greyboxEstimation(dataset, swingNumber, ski
     aOpt = modelOpt.Parameters(2).Value;
     mHOpt = modelOpt.Parameters(3).Value;
     phi1Opt = modelOpt.Parameters(4).Value;
-    ParametersOpt = [mOpt,aOpt,mHOpt, phi1Opt];
-    if virGravityDirs == 2
-        phi2Opt = modelOpt.Parameters(5).Value;     
-        ParametersOpt(end+1)= phi2Opt;
-    end
+    phi2Opt = modelOpt.Parameters(5).Value;  
+    parametersOpt = [mOpt,aOpt,mHOpt, phi1Opt, phi2Opt];   
     figure
     compare(data, modelOpt);
 end

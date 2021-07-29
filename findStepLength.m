@@ -1,10 +1,8 @@
-%{
-This function finds the indices corresponding the the swing of a right leg
-Author: Jesper Kreuk
-%}
+function [stepLength, indices] = findStepLength(simout, swingNumber)
+    % Evaluate the step length 
+    LAnklePosxy = simout.jointData.signals.values(:,3:4);
+    RAnklePosxy = simout.jointData.signals.values(:,7:8);
 
-function indices = findSwingIndices(dataset,swingNumber)
-    load(dataset, 'simout')
     RswingIdx = find(simout.RSwing.signals.values>0);
     RswingEndIdx = find(diff(RswingIdx)>1);
 
@@ -13,5 +11,9 @@ function indices = findSwingIndices(dataset,swingNumber)
     for i = 1:length(RswingEndIdx)-1
         RSwingIndices{i+1} = RswingIdx(RswingEndIdx(i)+1):RswingIdx(RswingEndIdx(i+1));
     end
+
     indices = cell2mat(RSwingIndices(swingNumber));
+
+    finalIndx = indices(end);
+    stepLength =  RAnklePosxy(finalIndx) - LAnklePosxy(finalIndx)
 end

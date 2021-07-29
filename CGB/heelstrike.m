@@ -24,7 +24,7 @@ function [timp, ximp, CP] = heelstrike(x0, params)
     
     % Simulate the nonlinear model 
     tspan = 0:1e-3:0.55;
-    [t,xnonlin] = ode45(@(t,x) CWodefun(t,x,m,a,mH,phi1,phi2), tspan, x0);
+    [t,xnonlin] = ode45(@(t,x) dynamics(t,x,m,a,mH,phi1,phi2), tspan, x0);
 
     % Find when the model hits the ground
     sw_cond = xnonlin(:,1)+xnonlin(:,2); % Switch condition th1+th2 = 0

@@ -21,7 +21,9 @@ addpath(mainfolderpath);
 addpath(genpath(strcat(mainfolderpath,[filesep 'CGB'])));
 addpath(strcat(mainfolderpath,[filesep 'Geyer']));
 addpath(strcat(mainfolderpath,[filesep 'NMS']));
+addpath(strcat(mainfolderpath,[filesep 'Results']));
 addpath(strcat(mainfolderpath,[filesep 'Song']));
+addpath(strcat(mainfolderpath,[filesep 'Song\param']));
 addpath(strcat(mainfolderpath,[filesep 'Timmers']));
 
 % This is only possible if gurobi is installed! This is the default path of

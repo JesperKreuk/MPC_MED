@@ -1,10 +1,17 @@
-function params = setupParamsStruct(ParametersOpt, Qy, yref, dt)
-    m = ParametersOpt(1);
-    a =  ParametersOpt(2);
-    mH =  ParametersOpt(3);
-    phi1 =  ParametersOpt(4);
-    if length(ParametersOpt)>4
-        phi2 =  ParametersOpt(5);
+function params = setupParamsStruct(parametersOpt, dt, controlParams)
+    if nargin == 2
+        params.dt = dt;
+    elseif nargin == 3
+        params.dt = dt;
+        params.Qy = controlParams.Qy;
+        params.yref = controlParams.yref;
+    end
+    m = parametersOpt(1);
+    a =  parametersOpt(2);
+    mH =  parametersOpt(3);
+    phi1 =  parametersOpt(4);
+    if length(parametersOpt)>4
+        phi2 =  parametersOpt(5);
     else
         phi2 = phi1;
     end
@@ -19,10 +26,6 @@ function params = setupParamsStruct(ParametersOpt, Qy, yref, dt)
     params.g = g;
     params.phi1 = phi1;
     params.phi2 = phi2;
-    params.dt = dt;
-%     params.hipCorrection = 0.0816;
+    
     params.hipCorrection = 0.0534;
-
-    params.Qy = Qy;
-    params.yref = yref;
 end
