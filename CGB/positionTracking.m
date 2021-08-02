@@ -4,6 +4,17 @@ capable of calculating the states as well, but multiple positions are
 possible, like the toe, ankle and hip as well as a visualisation of how the
 positions fit the NMS model.
 
+Arguments:
+* dataset: the dataset containing the positions required for the greybox
+    estimation
+* swingNumber: which swing of the data is used for greybox estimation
+* position: which position on the foot is tracked by the sensors
+
+Output: 
+* Rdatax: Matrix containing the states [th1;th2;dth1;dth2] where th is
+    short for theta
+* swingPercentageData: the normalised time vector of the chosen swing
+
 Author: Jesper Kreuk
 %}
 

@@ -1,51 +1,66 @@
-function S = buildMLD(Abarc,Bbarc,Baffbarc, dt)
+%{
+This function writes the linear MLD system of the CGB model given the 
+linear continuous time matrices such the MLD system has the following form
+           x(k+1) = A*x(k) + Bu*u + Baux*w + Baff
+           y(k) = C*x(k) 
+For more details, see Appendix D of the corresponding thesis
 
-    % Find linear matrices in continuous time
-%     Abarc = double([zeros(2),eye(2), zeros(2,1);eval(Asym),zeros(2,1);zeros(1,5)]);
-%     Bbarc = double([0;0;eval(Bsym);1]);
-%     Baffbarc = double([0;0;eval(ddth_nonlin);0]);
-    
-%     % Add state gamma
-%     Abarc = double([Abarc,zeros(4,1);zeros(1,5)]);
-%     Bbarc = double([Bbarc;1]);
-%     Baffbarc = double([Baffbarc;0]);
-    
-    % Find linear matrices in discrete time
-    Abar = eye(4)+Abarc*dt;
-    Bubar = Bbarc*dt;
-    Baffbar = Baffbarc*dt;
+Arguments:
+* Ac: Constant square state matrix from dx = Ac*x+Bc*u + Baffc (continuous-time)
+* Bc: Constant input matrix from dx = Ac*x+Bc*u + Baffc (continuous-time)
+* Baffc: Constant affine term from dx = Ac*x+Bc*u + Baffc (continuous-time)
+* dt: step time in seconds
 
+Output: 
+* S: Structure containing the MLD model
+
+Author: Jesper Kreuk
+%}
+
+function S = buildMLD(Ac,Bc,Baffc, dt)    
+    % Find linear matrices in discrete time, use a zero order hold
+    A = eye(4)+Ac*dt;
+    Bu = Bc*dt;
+    Baff = Baffc*dt;
+    
+    % Some constants used
+    L = 1;
+    c = 0.001; % only able to switch if th1 >= c
+    precision = eps; % Machine precision 
+
+    % Define lower and upper bounds
     Mx = [pi/2;pi/2;100;100];  % max(xbar)
     mx = -[pi/2;pi/2;100;100]; % min(xbar)
     Mu = 0;                        % max(u)
     mu = -5;                       % min(u)
-    L = 1;
-    c = 0.001; % only able to switch if th1 >= c
-    precision = eps;
     S.lb.x = mx;
     S.lb.u = mu;
     S.lb.aux = [mx;mu;0;0;0]; 
     S.ub.x = Mx;
     S.ub.u = Mu;
     S.ub.aux = [Mx;Mu;1;1;1];
+    
+    % Add the time step to the structure
     S.dt = dt;
     
-    % Add state x_p 
-    S.A = [eye(4), Baffbar;
+    % Define the MLD with augmented state vector xbar = [x; state x_p]
+    S.A = [eye(4), Baff;
         zeros(1,4), 1];
 
     S.Bu = zeros(5,1);
 
-    S.Baux = [Abar-eye(4), Bubar, zeros(4,3);
+    S.Baux = [A-eye(4), Bu, zeros(4,3);
             zeros(1,7), -1];
 
     S.Baff = zeros(5,1);
 
     S.C = [L, -L, zeros(1,3)];
-
-    S.Daux = zeros(1,8);
     
-    multiplier = 1e6;
+    % Define constraint matrices
+    % Ex*x + Eu*u + Eaux*w <= Eaff
+    
+    multiplier = 1e6; % A multiplier is used because some elements are 
+    % otherwise too close to zero
     S.Ex = multiplier*[-1 0 0 0 0;
           1 0 0 0 0;
           -1 -1 0 0 0;

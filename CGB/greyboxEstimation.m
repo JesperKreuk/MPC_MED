@@ -9,8 +9,10 @@ Arguments:
 * swingNumber: which swing of the data is used for greybox estimation
 
 Output: 
-* ParametersOpt: The optimized parameters [m, a, mH, phi1, phi2] of the CGB
+* parametersOpt: The optimized parameters [m, a, mH, phi1, phi2] of the CGB
     model
+* modelOpt: A structure containing the optimal model used by the function
+    "compare", which is useful for validating the model
 
 Author: Jesper Kreuk
 %}

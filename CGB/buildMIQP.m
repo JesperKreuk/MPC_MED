@@ -1,20 +1,48 @@
-% build matrices H, A and vectors f, b such that
-%    min V'HV+f'V    subject to:   Acon*V <= bcon, V(ivar)={0,1}
-%     V
-% Where V = [u;w] is a vector with all inputs and aux variables
+%{
+This function find all matrices required for optimization of the MIQP
+problem. The following form is made, for further details see Appendix E of
+the corresponding thesis.
+   min V'HV+f'V    subject to:   Acon*V <= bcon and lb <= V <= ub
+    V
+Where V = [u;w] is a vector with all inputs and aux variables, which can
+be binary.
+
+
+Arguments:
+* S: Structure containing the MLD model
+* Qy: Weight matrix that penalises the states
+* Qu: Weight matrix that penalises the input
+* x0: State of the current time step [th1;th2;dth1;dth2]
+* yref: Reference, this is the ankle to ankle distance in m
+* N: Prediction horizon (integer)
+
+Output: 
+* H: Constant matrix for quadratic terms of V
+* f: Constant vector for linear terms of V
+* constant: the constant of the cost function that is not a function of V 
+* Acon: Constant matrix of constraint equation Acon*V = bcon 
+* bcon: Constant vector of constraint equation Acon*V = bcon 
+* ivar: logical vector where 1 means the corresponding element of V is
+    binary
+* lb: lower bound of V
+* ub: upper bound of V
+
+Author: Jesper Kreuk
+%}
 
 function [H, f, constant, Acon, bcon, ivar, lb, ub] = buildMIQP(S, Qy, Qu, x0, yref, N)
+    % Extract MLD matrices and vectors
     A = S.A;
     Bu = S.Bu;
     Baux = S.Baux;
     Baff = S.Baff;
     C = S.C;
-    Daux = S.Daux;
     Ex = S.Ex;
     Eu = S.Eu;
     Eaux = S.Eaux;
     Eaff = S.Eaff;
-
+    
+    % Define sizes
     nx = size(A,1);         % Number of states
     nu = size(Bu,2);        % Number of inputs
     ny = size(C,1);         % Number of outputs
@@ -22,6 +50,7 @@ function [H, f, constant, Acon, bcon, ivar, lb, ub] = buildMIQP(S, Qy, Qu, x0, y
     
     ubin = zeros(nu,1); % There are no binary inputs
     
+    % Define which auxiliary variables are binary
     wbin = zeros(naux,1);
     wbin(S.j.d) = 1;
     
@@ -99,9 +128,6 @@ function [H, f, constant, Acon, bcon, ivar, lb, ub] = buildMIQP(S, Qy, Qu, x0, y
     end
     R4 = my_sum*Baff;
 
-%     % Build R5 = [Daux, Daux, ...]
-%     R5 = repmat(Daux,[1,N]);
-
     % Build Eps1 = diag([Ex,Ex,..])
     Eps1 = kron(eye(N),Ex);
 
@@ -122,11 +148,8 @@ function [H, f, constant, Acon, bcon, ivar, lb, ub] = buildMIQP(S, Qy, Qu, x0, y
         ivar = [ivar;wbin];
     end
     %% The optimization problem 
-    %    min V'HV+f'V    subject to:   Acon*V <= bcon
+    %    min V'HV+f'V    subject to:   Acon*V <= bcon and lb <= V <= ub
     %     V
-%     H = [R2'*C'*Qy*C*R2, R2'*C'*Qy*(C*R3+R5);
-%            (R3'*C'+R5')*Qy*C*R2, (R3'*C'+R5')*Qy*(C*R3+R5)];
-       
     H = [R2'*C'*Qy*C*R2+Qu, R2'*C'*Qy*C*R3;
            R3'*C'*Qy*C*R2, R3'*C'*Qy*C*R3];
 

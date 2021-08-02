@@ -1,3 +1,6 @@
+% This function extracts the positions from the output of the 3D NMS model
+% Author: Jesper Kreuk
+
 % Time
 t = simout.greyEstData.time;
 

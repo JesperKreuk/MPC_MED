@@ -1,3 +1,9 @@
+%{
+These colors are used for some of the plots, the colors with the use of 
+the linespacer function by Jonathan Lansey   
+https://www.mathworks.com/matlabcentral/fileexchange/42673-beautiful-and-distinguishable-line-colors-colormap
+%}
+
 Color1 = [    0.9686    0.9843    1.0000;
     0.7765    0.8588    0.9373;
     0.4196    0.6824    0.8392;

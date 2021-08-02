@@ -134,7 +134,7 @@ xnonlin = xnonlin.';
 params = setupParamsStruct(parametersOpt);
 if linearizeSystem
     % Linear system in continuous time
-    [Asym,Bsym,Baffsym] = linearizeCWModel(params);
+    [Asym,Bsym,Baffsym] = linearizeCGBModel(params);
     
     % Create matlab functions from symbolic expressions
     syms th1 th2 dth1 dth2 uCMG
@@ -143,30 +143,30 @@ if linearizeSystem
     matlabFunction(Baffsym,'Vars',{[th1;th2;dth1;dth2],uCMG},'File','Baffsymfun');
 end
 
-%% Simulate linear system for alpha = 0 from the initial position
+%% Simulate linear system for lambda = 0 from the initial position
 %%% Linearize around the initial position
 xeq = x0; % Equilibirum point
 Ac1 = Asymfun(xeq,0);
 Bc1 = Bsymfun(xeq,0);
 Baffc1 = Baffsymfun(xeq,0);
 
-% Simulate linear CGB model with alpha = 0
+% Simulate linear CGB model with lambda = 0
 xlin = x0;
 for i = 1:horizon
     xdot(:,i) =Ac1*xlin(:,i)+Baffc1;
     xlin(:,i+1) = xlin(:,i)+xdot(:,i)*dt;
 end
 
-%% Simulate linear system for alpha = 0.5 from the initial position
+%% Simulate linear system for lambda = 0.5 from the initial position
 % Find the linearization point and linearize
-alpha = 0.5;
-xeq2 = findLinearizationPoint(xnonlin, x0, alpha);
+lambda = 0.5;
+xeq2 = findLinearizationPoint(xnonlin, x0, lambda);
 
 Ac2 = Asymfun(xeq2,0);
 Bc2 = Bsymfun(xeq2,0);
 Baffc2 = Baffsymfun(xeq2,0);
 
-% Simulate linear CGB model with alpha = 0.5
+% Simulate linear CGB model with lambda = 0.5
 xlin2 = x0;
 for i = 1:horizon
     xdot2(:,i) =Ac2*xlin2(:,i)+Baffc2;
@@ -193,7 +193,7 @@ cutSwingPercentageData = mapfun(round(Nmodel/2):round(Nmodel/2)+horizon, 1, Nmod
 Ncut = 25;
 
 % linearization point 2
-xeqHalf = findLinearizationPoint(xnonlinHalf, x0half, alpha);
+xeqHalf = findLinearizationPoint(xnonlinHalf, x0half, lambda);
 
 A4 = Asymfun(xeqHalf,0);
 B4 = Bsymfun(xeqHalf,0);
@@ -221,7 +221,7 @@ plot(swingPercentageModel,xnonlin(1,1:Nmodel),'--','color',Color1(5,:),'LineWidt
 axis([0,100,-0.3,0.4])
 ylabel('\theta_1 in rad')
 title('Start at 0% swing')
-legend('Data','Lin \alpha = 0','Lin \alpha = 0.5','Nonlin','location','northwest')
+legend('Data','Lin \lambda = 0','Lin \lambda = 0.5','Nonlin','location','northwest')
 
 % This subplot is for theta 1 simulated from 50% swing
 subplot(222)
@@ -302,35 +302,140 @@ T = table(names,subplot1,subplot2,subplot3,subplot4);
 disp(T)
 
 
-%% Optimize alpha
+%% Optimize lambda
 [J3Data, J3Model] = findAlphaMatrices(dataset,swingNumberVal, params);
 
 [timp, ximp] = heelstrike(x0,params); % Find when heelstrike occurs
 kimp = round(timp/dt);
 
-alphaRange = 0:0.01:1;
+lambdaRange = 0:0.01:1;
 
 [~,I] = max(J3Data,[],1);
 for i = 1:kimp
     indx = I(i);
-    alphaopt1(i) = alphaRange(indx);
+    lambdaopt1(i) = lambdaRange(indx);
 end
 [~,I] = max(J3Model,[],1);
-alphaopt2 = [];
+lambdaopt2 = [];
 for i = 1:kimp
     indx = I(i);
-    alphaopt2(i) = alphaRange(indx);
+    lambdaopt2(i) = lambdaRange(indx);
 end
-swingPercentageAlpha = linspace(0,100,kimp);
+swingPercentagelambda = linspace(0,100,kimp);
 
 
 figure('DefaultAxesFontSize',11)
-plot(swingPercentageAlpha,alphaopt1,'--', 'Linewidth', 2)
+plot(swingPercentagelambda,lambdaopt1,'--', 'Linewidth', 2)
 hold on
-plot(swingPercentageAlpha,alphaopt2,'-.','Linewidth', 2)
+plot(swingPercentagelambda,lambdaopt2,'-.','Linewidth', 2)
 xlabel('Swing in %')
-ylabel('\alpha_o_p_t')
+ylabel('\lambda_o_p_t')
 legend('Nonlinear model','Data set', 'location','northwest')
+
+%% Compare model Timmers and Song
+load('greyboxDataTimmers.mat')
+
+% Time
+t = simout.greyEstData.time;
+
+% Extract relevant locations
+HATPosxy = simout.greyEstData.signals.values(:,1:2);
+LToePosxy = simout.greyEstData.signals.values(:,3:4);
+LAnklePosxy = simout.greyEstData.signals.values(:,5:6);
+LHeelPosxy = simout.greyEstData.signals.values(:,7:8);
+LKneePosxy = simout.greyEstData.signals.values(:,9:10);
+LHipPosxy = simout.greyEstData.signals.values(:,11:12);
+RToePosxy = simout.greyEstData.signals.values(:,13:14);
+RAnklePosxy = simout.greyEstData.signals.values(:,15:16);
+RHeelPosxy = simout.greyEstData.signals.values(:,17:18);
+RKneePosxy = simout.greyEstData.signals.values(:,19:20);
+RHipPosxy = simout.greyEstData.signals.values(:,21:22);
+
+% This constant is calculated in calculateSensorData.m
+dtTimmers = 1e-3;
+
+GaitPhaseData       = simout.GaitPhaseData;   
+rightLegState       = GaitPhaseData.signals.values(:,2);
+
+% Data valid while the state is 3 and 4, that is the swinging leg
+RswingIdx = find(rightLegState == 3 | rightLegState == 4);
+RswingEndIdx = find(diff(RswingIdx)>1);
+
+
+RSwingIndices = cell(length(RswingEndIdx),1);
+RSwingIndices{1} = RswingIdx(1):RswingIdx(RswingEndIdx(1));
+for i = 1:length(RswingEndIdx)-1
+    RSwingIndices{i+1} = RswingIdx(RswingEndIdx(i)+1):RswingIdx(RswingEndIdx(i+1));
+end
+
+indices = cell2mat(RSwingIndices(swingNumberVal));
+
+Ndata = length(indices);
+swingpercentagedataNathan = linspace(0,100,Ndata);
+% Sensor placement
+RfootPosxy = RAnklePosxy;
+LfootPosxy = LAnklePosxy;
+
+% Calculate the hip correction, which is the displacement in x position of
+% the hip to make the compass-gait biped hit the ground at the same time as
+% the model.
+RFootEnd = RfootPosxy(indices(end),1);
+LFootEnd = LfootPosxy(indices(end),1);
+RHipPosEnd = RHipPosxy(indices(end),1);
+LHipPosEnd = LHipPosxy(indices(end),1);
+hipPosEnd = (LHipPosEnd+RHipPosEnd)/2;
+hipCorrection = hipPosEnd-(LFootEnd+RFootEnd)/2;
+
+HipPosxy = (LHipPosxy + RHipPosxy)/2-hipCorrection;
+
+th1 = asin((HipPosxy(:,1)-LfootPosxy(:,1))/params.L);
+th2 = asin((HipPosxy(:,1)-RfootPosxy(:,1))/params.L);
+
+% Calculate dth1 and dth2
+dth1 = gradient(th1,dtTimmers);
+dth2 = gradient(th2,dtTimmers);
+
+% Define x and u
+x = [th1,th2,dth1,dth2];
+u = cos(x(:,1:2));
+
+% Cut data
+tdata = t(indices);
+LdataxNathan = x(indices,:);
+
+
+figure('DefaultAxesFontSize',11); hold on
+
+subplot(221)
+hold on
+plot(swingPercentageData,Rdatax(:,1),'LineWidth',1.5)
+plot(swingpercentagedataNathan,LdataxNathan(:,1),'-.','LineWidth',1.5)
+title('Stance leg')
+ylabel('Angle in rad')
+legend('Song','Nathan','Location', 'northwest')
+
+subplot(222)
+hold on
+plot(swingPercentageData,Rdatax(:,2),'LineWidth',1.5)
+plot(swingpercentagedataNathan,LdataxNathan(:,2),'-.','LineWidth',1.5)
+title('Swing leg')
+
+subplot(223)
+hold on
+plot(swingPercentageData,Rdatax(:,3),'LineWidth',1.5)
+plot(swingpercentagedataNathan,LdataxNathan(:,3),'-.','LineWidth',1.5)
+
+ylabel('Angular velocity in rad/s')
+xlabel('Swing in %')
+
+subplot(224)
+hold on    
+plot(swingPercentageData,Rdatax(:,4),'LineWidth',1.5)
+plot(swingpercentagedataNathan,LdataxNathan(:,4),'-.','LineWidth',1.5)
+ylabel('Angular velocity in rad/s')
+xlabel('Swing in %')
+
+
 %% Compare linear model with nonlinear model in an interactive plot  
 % figure options
 f = figure;
@@ -350,8 +455,8 @@ nonlinPrediction = plot(swingPercentageModel,xnonlin(1:2,1:Nmodel),'k','LineWidt
 linPrediction = plot(swingPercentageModel,xlin(1:2,1:Nmodel).','b--','LineWidth',1.7);
 linPrediction2 = plot(swingPercentageModel,xlin2(1:2,1:Nmodel).','r--','LineWidth',1.7);
 legend('\theta_1 data','\theta_2 data','\theta_1 nonlin','\theta_2 nonlin', ...
-    '\theta_1 lin \alpha = 0','\theta_2 lin \alpha = 0', ...
-    '\theta_1 lin \alpha = 0.5','\theta_2 lin \alpha = 0.5','location','southwest')
+    '\theta_1 lin \lambda = 0','\theta_2 lin \lambda = 0', ...
+    '\theta_1 lin \lambda = 0.5','\theta_2 lin \lambda = 0.5','location','southwest')
 axis([0,100,-0.8,0.5])
 
 % save data to use in the plotLines callback function
@@ -365,3 +470,4 @@ setappdata(f,'linPrediction2',linPrediction2);
 setappdata(f,'nonlinPrediction',nonlinPrediction);
 setappdata(f,'f',f);
 setappdata(f,'ParametersOpt',parametersOpt);
+

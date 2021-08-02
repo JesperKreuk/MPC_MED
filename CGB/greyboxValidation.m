@@ -6,8 +6,7 @@ Arguments:
 * dataset: the dataset containing the positions required for the greybox
     estimation
 * swingNumber: which swing of the data is used for greybox estimation
-* ParametersOpt: The optimized parameters [m, a, mH, phi1, phi2] of the CGB
-    model
+* modelOpt: The optimized CGB model (with an initial state for simulation)
 
 There is no output besides the a figure that compares the model with the
 data 

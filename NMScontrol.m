@@ -21,8 +21,8 @@ setup_paths
 %% Settings
 % Setting the test variables to 1 makes the optimization run, this can take
 % a while.
-disturbanceTest = 0;
-refTest = 0;
+disturbanceTest = 1;
+refTest = 1;
 %% Parameters
 % Load parameters
 nms_model_MechInit;
@@ -35,7 +35,6 @@ dt_visual = -1;
 umax = 5; % Assume a maximum torque of 5 Nm
 
 %% Optimization settings*
-
 model = 'nms_model_Push';
 
 uConstant = 0;
@@ -43,10 +42,15 @@ uConstant = 0;
 % Vector with torque disturbances 
 % [Lfoot; Lshank; Lthigh; HAT; Rthigh; Rshank; HATpush]
 disturbances = zeros(7,1);
+
+% When to start and stop the disturbance in seconds
 distStart = 2.29;
 distStop = 2.3;
+
+% When to start control
 controlStart = 2.3;
 
+% Disturbance amplitudes
 distAmp = -50:5:50;
 distAmp(11) = [];
 %% Run without distrubances
@@ -54,7 +58,6 @@ warning off
 simout = sim(model,'SrcWorkspace','current');
 warning on
 stepLength =  simout.RFootPos.signals.values(end,1)-simout.LFootPos.signals.values(end,1)
-
 
 %% Optimize input for different torque disturbances
 counter = 0;

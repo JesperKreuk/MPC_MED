@@ -1,4 +1,4 @@
-function [Asym,Bsym,Baffsym,ddth_nonlin] = linearizeCWModel(params)
+function [Asym,Bsym,Baffsym,ddth_nonlin] = linearizeCGBModel(params)
     % This function calculates variables
     % * Asym
     % * Bsym

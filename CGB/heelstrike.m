@@ -1,16 +1,18 @@
-function [timp, ximp, CP] = heelstrike(x0, params)
-    % The nonlinear model of the compass walker is actuated by the virtual
-    % gravity only. The moment of impact is determined and the variables
-    % are extracted
-    %
-    % Inputs
-    % * x0: current state
-    % * params: struct containing all relevant parameters
-    % Outputs
-    % * timp: time it takes before impact (in seconds)
-    % * ximp: the state at the moment of impact 
-    % * CP: the capture point
-    
+%{
+This function calculates when heelstrike occurs
+
+Arguments:
+* x0: the current state of the CGB model [th1;th2;dth1;dth2]
+* params: a structure containing the parameters of the CGB model
+
+Output: 
+* timp: The time in seconds from x0 that heel strike will occur
+* ximp: the state at the moment heel strike occurs
+
+Author: Jesper Kreuk
+%}
+
+function [timp, ximp] = heelstrike(x0, params)   
     a = params.a;       % Distance from heel to CoM leg
     L = params.L;       % Leg length
     b = params.b;       % Distance from CoM leg to hip
@@ -20,7 +22,6 @@ function [timp, ximp, CP] = heelstrike(x0, params)
     phi1 = params.phi1; % Virtual gravity angle stance leg
     phi2 = params.phi2; % Virtual gravity angle swing leg  
     
-    omega0 = sqrt(g/L); % Constant for calculating the capture point
     
     % Simulate the nonlinear model 
     tspan = 0:1e-3:0.55;
@@ -38,13 +39,4 @@ function [timp, ximp, CP] = heelstrike(x0, params)
     
     % The state when the model hits the ground
     ximp = xnonlin(crossIdx(end),:).';
-    
-    % The capture point when the model hits the ground
-    th1 = ximp(1);
-    th2 = ximp(2);
-    dth1 = ximp(3);
-    dth2 = ximp(4);
-    xCoM = (m*a*sin(th1)+mH*L*sin(th1)+m*(L*sin(th1)+b*sin(-th2)))/(2*m+mH);
-    dxCoM = (m*a*cos(th1)*dth1+mH*L*cos(th1)*dth1+m*(L*cos(th1)*dth1-b*cos(-th2)*dth2))/(2*m+mH);
-    CP = xCoM+dxCoM/omega0;
 end

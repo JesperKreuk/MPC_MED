@@ -1,8 +1,8 @@
 %{
 This function contains the nonlinear dynamics of the CGB model in
 continuous time, it can calculate the state derivative. It is quite similar
-to dynamics.m but used for a greybox estimation function that requires an
-input vector as well as the third argument.
+to dynamics.m but does not require a time to be specified and has a control
+input. It is used by the nonlinear MPC of the CGB.
 The dynamics:
                 M*ddth + C*dth+gbold = S*u
 
@@ -26,13 +26,12 @@ Output:
 Author: Jesper Kreuk
 %}
 
-
-function [dx, y] = dynamicsGreybox(t, x, u_med, m, a, mH, phi1, phi2, varargin)
-    % Define some constants   
+function dx = dynamicsNMPC(x,u_med,m,a,mH,phi1,phi2)
+    % Define some constants
     g =9.81;    % gravitational acceleration in m/s/s
     L = 1;      % leg length in m
     b = L-a;    % distance from the CoM of a leg to the hip 
-
+    
     % Extract angles and angular velocities from state x
     th1 = x(1);
     th2 = x(2);
@@ -42,8 +41,8 @@ function [dx, y] = dynamicsGreybox(t, x, u_med, m, a, mH, phi1, phi2, varargin)
     % Calculate torques from virtual gravity
     u_ank = (mH*L+m*L+m*a)*g*cos(th1)*tan(phi1)-m*b*g*cos(th2)*tan(phi2);
     u_hip = m*b*g*cos(th2)*tan(phi2);
-    u = [u_ank;u_hip];
-
+    u = [u_ank;u_hip;u_med];
+    
     % The equations of motion M*ddth + C*dth+gbold = S*u
     M = [mH*L^2+m*a^2+m*L^2, -m*b*L*cos(th1-th2);
         -m*b*L*cos(th1-th2), m*b^2];
@@ -51,12 +50,10 @@ function [dx, y] = dynamicsGreybox(t, x, u_med, m, a, mH, phi1, phi2, varargin)
         m*b*L*sin(th1-th2)*dth1,0];
     gbold = [-(mH*L+m*a+m*L)*sin(th1);
         m*b*sin(th2)]*g;
-
-    S = [1 1; 0 -1];
     
+    S = [1 1 0;0 -1 1]; % This gives a torque on theta2
     dx=zeros(4,1);
     dx(1)=x(3);
     dx(2)=x(4);
     dx(3:4)=M\(S*u-C*[dth1;dth2]-gbold);
-    y = [x(1);x(2)];
 end

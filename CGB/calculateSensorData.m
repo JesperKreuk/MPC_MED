@@ -1,12 +1,35 @@
-% This function works only for the right swing phase, similar can be done
-% for the left swing phase, but in this case the model is symmetric.
-function [Rdatax, Rdatau, Ndata] = calculateSensorData(LAnklePosxy,...
-                RAnklePosxy,LHipPosxy,RHipPosxy,hipCorrection,indices)
+%{
+This function can calculate the states of the CGB model, it will calculate
+the angles and angular velocity of the CGB as well as the torques exerted
+on the CGB by the virtual gravity vector. The angles are calculated from
+data of a 3D NMS model.
+
+Arguments:
+* LFootPosxy: Matrix containing the x and y position of the left foot
+* RFootPosxy: Matrix containing the x and y position of the right foot
+* LHipPosxy: Matrix containing the x and y position of the left hip
+* RHipPosxy: Matrix containing the x and y position of the right hip
+
+
+Output: 
+* Rdatax: Matrix containing the states [th1;th2;dth1;dth2] where th is
+    short for theta
+* Rdatau: Matrix containing the torques [uAnk; uHip] from virtual gravity
+* Ndata: Number of data points of the swing
+* hipCorrection: a constant offset in the px direction of the hip of the
+    CGB model with respect to the hip of the NMS model
+* swingIndices: All indices between toe off and heel strike of a certain 
+    swing
+
+Author: Jesper Kreuk
+%}
+function [Rdatax, Rdatau, Ndata] = calculateSensorData(LFootPosxy,...
+                RFootPosxy,LHipPosxy,RHipPosxy,hipCorrection,swingIndices)
     L = 1;
     dt = 1e-3;
             
-    RfootPosxy = RAnklePosxy;
-    LfootPosxy = LAnklePosxy;
+    RfootPosxy = RFootPosxy;
+    LfootPosxy = LFootPosxy;
     HipPosxy = (LHipPosxy + RHipPosxy)/2-hipCorrection;
 
     
@@ -24,7 +47,7 @@ function [Rdatax, Rdatau, Ndata] = calculateSensorData(LAnklePosxy,...
     u = cos(x(:,1:2));
 
     % Cut data
-    Rdatax = x(indices,:);
-    Rdatau = u(indices,:);
-    Ndata = length(indices);
+    Rdatax = x(swingIndices,:);
+    Rdatau = u(swingIndices,:);
+    Ndata = length(swingIndices);
 end
