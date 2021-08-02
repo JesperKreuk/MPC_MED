@@ -11,6 +11,7 @@ Arguments:
 * yrefD: the desired reference, this reference is compensated because the
     MLD uses a linear approximation
 * alpha: a constant used to calculate the linearization point
+
 Output: 
 * y: a vector containing the optimal torque of the MED and the updated 
     counter [u_med; counter]
